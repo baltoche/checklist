@@ -8,16 +8,21 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f6f1e7",
-  "theme_color": "#1f6f54",
+  "background_color": "#F2F6F1",
+  "theme_color": "#12433A",
   "categories": ["productivity"],
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ],
   "shortcuts": [
     {
       "name": "Nouvelle tâche",
+      "description": "Ajouter rapidement une tâche",
       "url": "./?add=1",
       "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
