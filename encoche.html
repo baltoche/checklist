@@ -8,6 +8,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Karla:wght@400..800&display=swap" rel="stylesheet">
+<!-- PWA -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EnCoche">
 <style>
   :root{
     --bg:#F2F6F1; --ink:#132A22; --muted:#5E7268;
@@ -627,6 +635,88 @@ function syncChips(){ document.querySelectorAll('.chip[data-f]').forEach(c=>c.cl
 
   save(); render();
 })();
+</script>
+<script>
+/* ================= PWA : Installation & Hors ligne ================= */
+let deferredPrompt = null;
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+// Bouton d'installation
+addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!standalone) {
+    const installBtn = document.createElement('button');
+    installBtn.className = 'chip';
+    installBtn.innerHTML = '⬇ Installer';
+    installBtn.style.cssText = 'background:#FF7439;color:#fff;border-color:transparent;box-shadow:0 6px 14px -6px rgba(255,95,46,.5)';
+    installBtn.onclick = async () => {
+      if (!deferredPrompt) return;
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') installBtn.remove();
+      deferredPrompt = null;
+    };
+    document.querySelector('.toolbar').appendChild(installBtn);
+  }
+});
+
+addEventListener('appinstalled', () => {
+  snack('EnCoche installée 🎉');
+});
+
+// Indicateur hors ligne
+const offlineIndicator = document.createElement('div');
+offlineIndicator.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#E5484D;color:#fff;padding:8px 16px;border-radius:12px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:.3s;pointer-events:none';
+offlineIndicator.textContent = '⛅ Hors ligne';
+document.body.appendChild(offlineIndicator);
+
+function updateOnlineStatus() {
+  offlineIndicator.style.opacity = navigator.onLine ? '0' : '1';
+  if (!navigator.onLine) {
+    snack('Mode hors ligne — vos tâches restent enregistrées 💾');
+  }
+}
+
+addEventListener('offline', updateOnlineStatus);
+addEventListener('online', () => {
+  updateOnlineStatus();
+  snack('De retour en ligne ✅');
+});
+updateOnlineStatus();
+
+// Enregistrement du Service Worker
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// Raccourci d'app : ouvrir directement le modal "Nouvelle tâche"
+if (new URLSearchParams(location.search).has('add')) {
+  history.replaceState({}, '', location.pathname);
+  setTimeout(() => {
+    const fab = document.getElementById('fab');
+    if (fab) fab.click();
+  }, 400);
+}
+
+// Synchronisation inter-onglets
+addEventListener('storage', e => {
+  if (e.key === LS) {
+    state = load() || { tasks: [], sound: true };
+    render();
+  }
+});
+
+// Astuce iOS
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (isIOS && !navigator.standalone && !localStorage.getItem('encoche.ioshint')) {
+  setTimeout(() => {
+    snack('Pour installer : Safari → Partager → Sur l\'écran d\'accueil 📲');
+    localStorage.setItem('encoche.ioshint', '1');
+  }, 2000);
+}
 </script>
 </body>
 </html>
